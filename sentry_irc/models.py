@@ -8,6 +8,7 @@ sentry_irc.models
 
 from django import forms
 
+from sentry.conf import settings
 from sentry.models import ProjectOption
 from sentry.plugins import Plugin, register
 
@@ -45,11 +46,14 @@ class IRCMessage(Plugin):
         room = self.get_option('room', event.project)
         password = self.get_option('password', event.project)
         ssl = self.get_option('ssl', event.project)
-        message = '[%s] %s' % (event.server_name, event.message)
+        link = '%s/%s/group/%d/' % (settings.URL_PREFIX, group.project.slug,
+                                    group.id)
+        message = '[%s] %s (%s)' % (event.server_name, event.message, link)
         self.send_payload(server, port, nick, password, room, ssl, message)
 
     def send_payload(self, server, port, nick, password, room, ssl_c, message):
         import socket
+        import re
         from ssl import wrap_socket
         irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         irc.connect((server, port))
@@ -59,14 +63,16 @@ class IRCMessage(Plugin):
             ircsock = irc
         ircsock.send("USER %s %s %s :Sentry IRC bot\n" % ((nick,) * 3))
         ircsock.send("NICK %s\n" % nick)
-        ircsock.send("JOIN %s\n" % room)
         while 1:
-            ircmsg = ircsock.recv(2048).strip('\n\r') # receive data from the server
-            print(ircmsg) # Here we print what's coming from the server
-            if ircmsg.find("PING :") != -1: # if the server pings us then we've got to respond!
-                ircsock.send("PONG :pingis\n")
+            ircmsg = ircsock.recv(2048).strip('\n\r')
+            if re.findall(' 00[1-4] %s' % nick, ircmsg):
+                ircsock.send("JOIN %s\n" % room)
+            pong = re.findall('^PING\s*:\s*(.*)$', ircmsg)
+            if pong:
+                ircsock.send("PONG %s\n" % pong)
+            if re.findall(' 366 %s %s :' % (nick, room), ircmsg):
+                ircsock.send("PRIVMSG %s :%s\n" % (room, message))
+                ircsock.send("PART %s\n" % room)
                 break
-        ircsock.send("PRIVMSG %s %s\n" % (room, message))
-        irc.send("PART %s\n" % room)
         irc.send("QUIT\n")
         irc.close()
