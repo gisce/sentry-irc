@@ -6,6 +6,10 @@ sentry_irc.models
 :license: BSD, see LICENSE for more details.
 """
 
+import socket
+import re
+from ssl import wrap_socket
+
 from django import forms
 
 from sentry.conf import settings
@@ -15,13 +19,12 @@ from sentry.plugins import Plugin, register
 
 
 class IRCOptionsForm(forms.Form):
-    server = forms.CharField(help_text="Server")
-    port = forms.IntegerField(help_text="Port")
-    room = forms.CharField(help_text="Room")
-    nick = forms.CharField(help_text="Nick")
-    password = forms.CharField(widget=forms.PasswordInput,
-                               help_text="Password")
-    ssl = forms.BooleanField(help_text="Ssl")
+    server = forms.CharField()
+    port = forms.IntegerField()
+    room = forms.CharField()
+    nick = forms.CharField()
+    password = forms.CharField(required=False)
+    ssl = forms.BooleanField(required=False)
 
 
 @register
@@ -44,6 +47,8 @@ class IRCMessage(Plugin):
         port = self.get_option('port', event.project)
         nick = self.get_option('nick', event.project)
         room = self.get_option('room', event.project)
+        if not room.startswith('#'):
+            room = '#%s' % room
         password = self.get_option('password', event.project)
         ssl = self.get_option('ssl', event.project)
         link = '%s/%s/group/%d/' % (settings.URL_PREFIX, group.project.slug,
@@ -52,9 +57,6 @@ class IRCMessage(Plugin):
         self.send_payload(server, port, nick, password, room, ssl, message)
 
     def send_payload(self, server, port, nick, password, room, ssl_c, message):
-        import socket
-        import re
-        from ssl import wrap_socket
         irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         irc.connect((server, port))
         if ssl_c:
