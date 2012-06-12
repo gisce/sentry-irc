@@ -17,12 +17,12 @@ tests_require = [
 ]
 
 install_requires = [
-    'sentry>=3.8.0',
+    'sentry>=4.6.0',
 ]
 
 setup(
     name='sentry-irc',
-    version='0.1.0',
+    version='1.0.0',
     author='Eduard Carreras',
     author_email='ecarreras@gisce.net',
     url='http://code.gisce.net/sentry-irc',
@@ -35,6 +35,11 @@ setup(
     tests_require=tests_require,
     extras_require={'test': tests_require},
     test_suite='runtests.runtests',
+    entry_points={
+       'sentry.plugins': [
+            'irc = sentry_irc.plugin:IRCMessage'
+        ],
+    },
     include_package_data=True,
     classifiers=[
         'Framework :: Django',

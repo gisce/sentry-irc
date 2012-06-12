@@ -13,9 +13,9 @@ from ssl import wrap_socket
 from django import forms
 
 from sentry.conf import settings
-from sentry.models import ProjectOption
-from sentry.plugins import Plugin, register
+from sentry.plugins import Plugin
 
+import sentry_irc
 
 
 class IRCOptionsForm(forms.Form):
@@ -27,13 +27,13 @@ class IRCOptionsForm(forms.Form):
     ssl = forms.BooleanField(required=False)
 
 
-@register
 class IRCMessage(Plugin):
     author = 'Eduard Carreras'
     author_url = 'http://code.gisce.net/sentry-irc'
     title = 'IRC'
     conf_title = 'IRC'
     conf_key = 'irc'
+    version = sentry_irc.VERSION
     project_conf_form = IRCOptionsForm
 
     def is_configured(self, project):
