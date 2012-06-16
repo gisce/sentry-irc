@@ -3,12 +3,5 @@ A plugin for [Sentry](https://www.getsentry.com/) that logs errors to an IRC roo
 ## Installation
 `$ pip install sentry-irc`
 
-Add `sentry_irc` to your `INSTALLED_APPS`:
+And with the new plugin API, senty-irc plugin will be added in your sentry server.
 
-```python
-INSTALLED_APPS = (
-    #...
-    'sentry',
-    'sentry_irc',
-)
-```
