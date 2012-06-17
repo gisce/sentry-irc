@@ -8,6 +8,7 @@ sentry_irc.models
 
 import socket
 import re
+from random import randrange
 from ssl import wrap_socket
 
 from django import forms
@@ -73,6 +74,10 @@ class IRCMessage(Plugin):
             pong = re.findall('^PING\s*:\s*(.*)$', ircmsg)
             if pong:
                 ircsock.send("PONG %s\n" % pong)
+            if re.findall(' 433 \* %s' % nick, ircmsg):
+                nick += '%s' % randrange(1000, 2000)
+                ircsock.send("NICK %s\n" % nick)
+                ircmsg = ircsock.recv(2048)
             if re.findall(' 00[1-4] %s' % nick, ircmsg):
                 if not without_join:
                     ircsock.send("JOIN %s\n" % room)
