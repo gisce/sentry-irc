@@ -22,7 +22,8 @@ import sentry_irc
 class IRCOptionsForm(forms.Form):
     server = forms.CharField()
     port = forms.IntegerField()
-    room = forms.CharField()
+    room = forms.CharField(help_text="You can add multiple rooms separated "
+                                     "by comma")
     without_join = forms.BooleanField(required=False)
     nick = forms.CharField()
     password = forms.CharField(required=False)
@@ -54,10 +55,10 @@ class IRCMessage(Plugin):
         server = self.get_option('server', project)
         port = self.get_option('port', project)
         nick = self.get_option('nick', project)
-        room = self.get_option('room', project)
+        rooms = self.get_option('room', project)
         without_join = self.get_option('without_join', project)
-        if not room.startswith('#'):
-            room = '#%s' % room
+        rooms = [x.startswith('#') and x or '#%s' % x
+                 for x in [x.strip() for x in rooms.split(',')]]
         password = self.get_option('password', project)
         ssl_c = self.get_option('ssl', project)
 
@@ -79,11 +80,12 @@ class IRCMessage(Plugin):
                 ircsock.send("NICK %s\n" % nick)
                 ircmsg = ircsock.recv(2048)
             if re.findall(' 00[1-4] %s' % nick, ircmsg):
-                if not without_join:
-                    ircsock.send("JOIN %s\n" % room)
-                ircsock.send("PRIVMSG %s :%s\n" % (room, message))
-                if not without_join:
-                    ircsock.send("PART %s\n" % room)
+                for room in rooms:
+                    if not without_join:
+                        ircsock.send("JOIN %s\n" % room)
+                    ircsock.send("PRIVMSG %s :%s\n" % (room, message))
+                    if not without_join:
+                        ircsock.send("PART %s\n" % room)
                 break
         ircsock.recv(2048)
         ircsock.send("QUIT\n")
