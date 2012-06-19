@@ -89,4 +89,4 @@ class IRCMessage(Plugin):
                 break
         ircsock.recv(2048)
         ircsock.send("QUIT\n")
-        ircsock.close()
+        irc.close()
