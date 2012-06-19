@@ -57,8 +57,8 @@ class IRCMessage(Plugin):
         return (
             all((self.get_option(k, project)
                  for k in ('server', 'port', 'nick'))
-            ) and any(self.get_option(k, project)
-                for k in ('room', 'user')
+            ) and any((self.get_option(k, project)
+                for k in ('room', 'user'))
             )
         )
 
