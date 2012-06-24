@@ -23,11 +23,25 @@ class IRCOptionsForm(forms.Form):
     server = forms.CharField()
     port = forms.IntegerField()
     room = forms.CharField(help_text="You can add multiple rooms separated "
-                                     "by comma")
+                                     "by comma",
+                           required=False)
     without_join = forms.BooleanField(required=False)
+    user = forms.CharField(help_text="You can add multiple users to be "
+                                     "notified separated by comma",
+                           required=False)
     nick = forms.CharField()
     password = forms.CharField(required=False)
     ssl = forms.BooleanField(required=False)
+
+    def clean(self):
+        cleaned_data = super(IRCOptionsForm, self).clean()
+        room = cleaned_data.get('room', '')
+        user = cleaned_data.get('user', '')
+        if not any((user, room)):
+            msg = u"Must put either a room or an user"
+            for k in ('room', 'user'):
+                self._errors[k] = self.error_class([msg])
+        return cleaned_data
 
 
 class IRCMessage(Plugin):
@@ -40,8 +54,13 @@ class IRCMessage(Plugin):
     project_conf_form = IRCOptionsForm
 
     def is_configured(self, project):
-        return all((self.get_option(k, project)
-                   for k in ('server', 'port', 'nick', 'room')))
+        return (
+            all((self.get_option(k, project)
+                 for k in ('server', 'port', 'nick'))
+            ) and any((self.get_option(k, project)
+                for k in ('room', 'user'))
+            )
+        )
 
     def post_process(self, group, event, is_new, is_sample, **kwargs):
         if not is_new or not self.is_configured(event.project):
@@ -57,8 +76,10 @@ class IRCMessage(Plugin):
         nick = self.get_option('nick', project)
         rooms = self.get_option('room', project)
         without_join = self.get_option('without_join', project)
+        users = self.get_option('user', project)
         rooms = [x.startswith('#') and x or '#%s' % x
                  for x in [x.strip() for x in rooms.split(',')]]
+        users = [x.strip() for x in users.split(',')]
         password = self.get_option('password', project)
         ssl_c = self.get_option('ssl', project)
 
@@ -86,6 +107,8 @@ class IRCMessage(Plugin):
                     ircsock.send("PRIVMSG %s :%s\n" % (room, message))
                     if not without_join:
                         ircsock.send("PART %s\n" % room)
+                for user in users:
+                    ircsock.send("PRIVMSG %s :%s\n" % (user, message))
                 break
         ircsock.recv(2048)
         ircsock.send("QUIT\n")
