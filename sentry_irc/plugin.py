@@ -76,7 +76,7 @@ class IRCMessage(Plugin):
         nick = self.get_option('nick', project)
         rooms = self.get_option('room', project)
         without_join = self.get_option('without_join', project)
-        users = self.get_option('user', project)
+        users = self.get_option('user', project) or ''
         rooms = [x.startswith('#') and x or '#%s' % x
                  for x in [x.strip() for x in rooms.split(',')]]
         users = [x.strip() for x in users.split(',')]
