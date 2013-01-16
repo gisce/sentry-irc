@@ -89,6 +89,8 @@ class IRCMessage(Plugin):
             ircsock = wrap_socket(irc)
         else:
             ircsock = irc
+        if password:
+            ircsock.send("PASS %s\n" % password)
         ircsock.send("USER %s %s %s :Sentry IRC bot\n" % ((nick,) * 3))
         ircsock.send("NICK %s\n" % nick)
         while 1:
