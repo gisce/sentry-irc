@@ -71,6 +71,7 @@ class IRCMessage(Plugin):
         self.send_payload(event.project, message)
 
     def send_payload(self, project, message):
+        message = message.replace('\n', ' ').replace('\r', ' ')
         server = self.get_option('server', project)
         port = self.get_option('port', project)
         nick = self.get_option('nick', project)
