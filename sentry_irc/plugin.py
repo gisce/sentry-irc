@@ -8,16 +8,20 @@ sentry_irc.models
 
 import socket
 import re
+import time
 from random import randrange
 from ssl import wrap_socket
 
 from django import forms
+from django.core.urlresolvers import reverse
 
-from sentry.conf import settings
 from sentry.plugins import Plugin
+from sentry.utils.http import absolute_uri
 
 import sentry_irc
 
+
+PING_RE = re.compile(r'^PING\s*:\s*(.*)$')
 
 class IRCOptionsForm(forms.Form):
     server = forms.CharField()
@@ -53,20 +57,27 @@ class IRCMessage(Plugin):
     version = sentry_irc.VERSION
     project_conf_form = IRCOptionsForm
 
+    # socket / read timeout
+    timeout = 15.0
+
     def is_configured(self, project):
+        go = self.get_option
         return (
-            all((self.get_option(k, project)
-                 for k in ('server', 'port', 'nick'))
-            ) and any((self.get_option(k, project)
-                for k in ('room', 'user'))
-            )
+            all(go(k, project) for k in ('server', 'port', 'nick'))
+            and any(go(k, project) for k in ('room', 'user'))
         )
+
+    def get_group_url(self, group):
+        return absolute_uri(reverse('sentry-group', args=[
+            group.team.slug,
+            group.project.slug,
+            group.id,
+        ]))
 
     def post_process(self, group, event, is_new, is_sample, **kwargs):
         if not is_new or not self.is_configured(event.project):
             return
-        link = '%s/%s/group/%d/' % (settings.URL_PREFIX, group.project.slug,
-                                    group.id)
+        link = self.get_group_url(group)
         message = '[%s] %s (%s)' % (event.server_name, event.message, link)
         self.send_payload(event.project, message)
 
@@ -79,12 +90,14 @@ class IRCMessage(Plugin):
         without_join = self.get_option('without_join', project)
         users = self.get_option('user', project) or ''
         rooms = [x.startswith('#') and x or '#%s' % x
-                 for x in [x.strip() for x in rooms.split(',')]]
+                 for x in (x.strip() for x in rooms.split(','))]
         users = [x.strip() for x in users.split(',')]
         password = self.get_option('password', project)
         ssl_c = self.get_option('ssl', project)
 
+        start = time.time()
         irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        irc.settimeout(self.timeout)
         irc.connect((server, port))
         if ssl_c:
             ircsock = wrap_socket(irc)
@@ -94,9 +107,9 @@ class IRCMessage(Plugin):
             ircsock.send("PASS %s\n" % password)
         ircsock.send("USER %s %s %s :Sentry IRC bot\n" % ((nick,) * 3))
         ircsock.send("NICK %s\n" % nick)
-        while 1:
+        while (time.time() - start) < self.timeout:
             ircmsg = ircsock.recv(2048).strip('\n\r')
-            pong = re.findall('^PING\s*:\s*(.*)$', ircmsg)
+            pong = PING_RE.findall(ircmsg)
             if pong:
                 ircsock.send("PONG %s\n" % pong)
             if re.findall(' 433 \* %s' % nick, ircmsg):
@@ -113,6 +126,10 @@ class IRCMessage(Plugin):
                 for user in users:
                     ircsock.send("PRIVMSG %s :%s\n" % (user, message))
                 break
-        ircsock.recv(2048)
+
         ircsock.send("QUIT\n")
+
+        # try to flush pending buffer
+        while (time.time() - start) < self.timeout and ircmsg:
+            ircmsg = ircsock.recv(2048)
         irc.close()
