@@ -27,7 +27,7 @@ install_requires = [
 
 setup(
     name='sentry-irc',
-    version='1.4.1',
+    version='1.5.0',
     author='Eduard Carreras',
     author_email='ecarreras@gisce.net',
     url='http://code.gisce.net/sentry-irc',
