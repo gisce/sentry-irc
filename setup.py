@@ -22,7 +22,7 @@ tests_require = [
 ]
 
 install_requires = [
-    'sentry>=4.6.0',
+    'sentry>=5.4.1',
 ]
 
 setup(
@@ -41,7 +41,7 @@ setup(
     extras_require={'test': tests_require},
     test_suite='nose.collector',
     entry_points={
-       'sentry.plugins': [
+        'sentry.plugins': [
             'irc = sentry_irc.plugin:IRCMessage'
         ],
     },
