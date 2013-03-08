@@ -19,6 +19,9 @@ from sentry.plugins import Plugin
 import sentry_irc
 
 
+BASE_MAXIMUM_MESSAGE_LENGTH = 400
+
+
 class IRCOptionsForm(forms.Form):
     server = forms.CharField()
     port = forms.IntegerField()
@@ -67,11 +70,22 @@ class IRCMessage(Plugin):
             return
         link = '%s/%s/group/%d/' % (settings.URL_PREFIX, group.project.slug,
                                     group.id)
-        message = '[%s] %s (%s)' % (event.server_name, event.message, link)
+
+        message = event.message.replace('\n', ' ').replace('\r', ' ')
+        message_format = '[%s] %s (%s)'
+        max_message_length = (
+            BASE_MAXIMUM_MESSAGE_LENGTH
+            - len(link)
+            - len(event.server_name)
+            - len(message_format.replace('%s', '')) # No of brackets/spaces
+        )
+        if len(message) > max_message_length:
+            message = message[0:max_message_length-3] + '...'
+
+        message = message_format % (event.server_name, message, link)
         self.send_payload(event.project, message)
 
     def send_payload(self, project, message):
-        message = message.replace('\n', ' ').replace('\r', ' ')
         server = self.get_option('server', project)
         port = self.get_option('port', project)
         nick = self.get_option('nick', project)

@@ -11,9 +11,14 @@ notifications to IRC rooms.
 """
 from setuptools import setup, find_packages
 
+# See http://stackoverflow.com/questions/9352656/python-assertionerror-when-running-nose-tests-with-coverage
+# for why we need to do this.
+from multiprocessing import util
+
 
 tests_require = [
     'nose>=1.1.2',
+    'mimic>=0.0.2',
 ]
 
 install_requires = [
@@ -34,7 +39,7 @@ setup(
     install_requires=install_requires,
     tests_require=tests_require,
     extras_require={'test': tests_require},
-    test_suite='runtests.runtests',
+    test_suite='nose.collector',
     entry_points={
        'sentry.plugins': [
             'irc = sentry_irc.plugin:IRCMessage'
