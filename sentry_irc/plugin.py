@@ -98,7 +98,7 @@ class IRCMessage(Plugin):
         server = self.get_option('server', project)
         port = self.get_option('port', project)
         nick = self.get_option('nick', project)
-        rooms = self.get_option('room', project)
+        rooms = self.get_option('room', project) or ''
         without_join = self.get_option('without_join', project)
         users = self.get_option('user', project) or ''
         rooms = [x.startswith('#') and x or '#%s' % x
