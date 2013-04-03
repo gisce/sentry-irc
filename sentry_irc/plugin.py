@@ -15,7 +15,7 @@ from ssl import wrap_socket
 from django import forms
 from django.core.urlresolvers import reverse
 
-from sentry.plugins import Plugin
+from sentry.plugins.bases.notify import NotifyPlugin
 from sentry.utils.http import absolute_uri
 
 import sentry_irc
@@ -50,7 +50,7 @@ class IRCOptionsForm(forms.Form):
         return cleaned_data
 
 
-class IRCMessage(Plugin):
+class IRCMessage(NotifyPlugin):
     author = 'Eduard Carreras'
     author_url = 'http://code.gisce.net/sentry-irc'
     title = 'IRC'
