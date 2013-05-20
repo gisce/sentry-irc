@@ -58,6 +58,7 @@ class IRCMessage(Plugin):
     conf_key = 'irc'
     version = sentry_irc.VERSION
     project_conf_form = IRCOptionsForm
+    project_conf_template = "sentry_irc/project_configuration.html"
 
     # socket / read timeout
     timeout = 15.0

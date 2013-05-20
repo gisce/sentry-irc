@@ -27,7 +27,7 @@ install_requires = [
 
 setup(
     name='sentry-irc',
-    version='2.0.1',
+    version='2.1-dev',
     author='Eduard Carreras',
     author_email='ecarreras@gisce.net',
     url='http://code.gisce.net/sentry-irc',
@@ -41,6 +41,9 @@ setup(
     extras_require={'test': tests_require},
     test_suite='nose.collector',
     entry_points={
+        'sentry.apps': [
+            'irc = sentry_irc'
+        ],
         'sentry.plugins': [
             'irc = sentry_irc.plugin:IRCMessage'
         ],
