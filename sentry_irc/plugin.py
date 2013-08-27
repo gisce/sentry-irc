@@ -76,23 +76,45 @@ class IRCMessage(NotifyPlugin):
             group.id,
         ]))
 
+    def on_alert(self, alert, **kwargs):
+        project = alert.project
+
+        message = self.format_message(
+            project,
+            alert.message.encode('utf-8').splitlines()[0],
+            'ALERT',
+            alert.get_absolute_url(),
+        )
+
+        self.send_payload(project, message)
+
     def post_process(self, group, event, is_new, is_sample, **kwargs):
-        if not is_new or not self.is_configured(event.project):
+        project = event.project
+        if not is_new or not self.is_configured(project):
             return
-        link = self.get_group_url(group)
-        message = event.message.replace('\n', ' ').replace('\r', ' ')
-        message_format = '[%s] %s (%s)'
+
+        message = self.format_message(
+            project,
+            event.message.encode('utf-8').splitlines()[0],
+            event.get_level_display().upper(),
+            self.get_group_url(group),
+        )
+
+        self.send_payload(project, message)
+
+    def format_message(self, project, message, level, link):
+        message_format = '[%s] %s %s (%s)'
         max_message_length = (
             BASE_MAXIMUM_MESSAGE_LENGTH
             - len(link)
-            - len(event.server_name)
-            - len(message_format.replace('%s', '')) # No of brackets/spaces
+            - len(level)
+            - len(project.name)
+            - len(message_format.replace('%s', ''))  # No of brackets/spaces
         )
         if len(message) > max_message_length:
             message = message[0:max_message_length-3] + '...'
 
-        message = message_format % (event.server_name, message, link)
-        self.send_payload(event.project, message)
+        return message_format % (level, project.name, message, link)
 
     def send_payload(self, project, message):
         server = self.get_option('server', project)
