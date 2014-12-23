@@ -76,9 +76,7 @@ class IRCMessage(Plugin):
             group.id,
         ]))
 
-    def post_process(self, group, event, is_new, is_sample, **kwargs):
-        if not is_new or not self.is_configured(event.project):
-            return
+    def notify_users(self, group, event, fail_silently=False):
         link = self.get_group_url(group)
         message = event.message.replace('\n', ' ').replace('\r', ' ')
         if event.server_name:
