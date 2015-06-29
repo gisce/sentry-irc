@@ -9,16 +9,16 @@ sentry_irc.models
 import socket
 import re
 import time
-from random import randrange
-from ssl import wrap_socket
+
+import sentry_irc
 
 from django import forms
 from django.core.urlresolvers import reverse
+from random import randrange
+from ssl import wrap_socket
 
-from sentry.plugins import Plugin
+from sentry.plugins.bases.notify import NotificationPlugin
 from sentry.utils.http import absolute_uri
-
-import sentry_irc
 
 
 BASE_MAXIMUM_MESSAGE_LENGTH = 400
@@ -50,7 +50,7 @@ class IRCOptionsForm(forms.Form):
         return cleaned_data
 
 
-class IRCMessage(Plugin):
+class IRCMessage(NotificationPlugin):
     author = 'Eduard Carreras'
     author_url = 'http://code.gisce.net/sentry-irc'
     title = 'IRC'
