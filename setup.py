@@ -22,12 +22,12 @@ tests_require = [
 ]
 
 install_requires = [
-    'sentry>=6.1.1',
+    'sentry>=7',
 ]
 
 setup(
     name='sentry-irc',
-    version='3.0.0',
+    version='3.1.0',
     author='Eduard Carreras',
     author_email='ecarreras@gisce.net',
     url='http://code.gisce.net/sentry-irc',
