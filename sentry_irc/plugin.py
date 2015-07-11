@@ -9,16 +9,16 @@ sentry_irc.models
 import socket
 import re
 import time
-from random import randrange
-from ssl import wrap_socket
+
+import sentry_irc
 
 from django import forms
 from django.core.urlresolvers import reverse
+from random import randrange
+from ssl import wrap_socket
 
-from sentry.plugins.bases.notify import NotifyPlugin
+from sentry.plugins.bases.notify import NotificationPlugin
 from sentry.utils.http import absolute_uri
-
-import sentry_irc
 
 
 BASE_MAXIMUM_MESSAGE_LENGTH = 400
@@ -50,7 +50,7 @@ class IRCOptionsForm(forms.Form):
         return cleaned_data
 
 
-class IRCMessage(NotifyPlugin):
+class IRCMessage(NotificationPlugin):
     author = 'Eduard Carreras'
     author_url = 'http://code.gisce.net/sentry-irc'
     title = 'IRC'
@@ -76,45 +76,27 @@ class IRCMessage(NotifyPlugin):
             group.id,
         ]))
 
-    def on_alert(self, alert, **kwargs):
-        project = alert.project
+    def notify_users(self, group, event, fail_silently=False):
+        link = self.get_group_url(group)
+        message = event.message.replace('\n', ' ').replace('\r', ' ')
+        if event.server_name:
+            message_format = '[%s] %s (%s)'
+            message_args = (event.server_name, message, link)
+        else:
+            message_format = '%s (%s)'
+            message_args = (message, link)
 
-        message = self.format_message(
-            project,
-            alert.message.encode('utf-8').splitlines()[0],
-            'ALERT',
-            alert.get_absolute_url(),
-        )
-
-        self.send_payload(project, message)
-
-    def post_process(self, group, event, is_new, is_sample, **kwargs):
-        project = event.project
-        if not is_new or not self.is_configured(project):
-            return
-
-        message = self.format_message(
-            project,
-            event.message.encode('utf-8').splitlines()[0],
-            event.get_level_display().upper(),
-            self.get_group_url(group),
-        )
-
-        self.send_payload(project, message)
-
-    def format_message(self, project, message, level, link):
-        message_format = '[%s] %s %s (%s)'
         max_message_length = (
             BASE_MAXIMUM_MESSAGE_LENGTH
             - len(link)
-            - len(level)
-            - len(project.name)
-            - len(message_format.replace('%s', ''))  # No of brackets/spaces
+            - len(event.server_name or '')
+            - len(message_format.replace('%s', '')) # No of brackets/spaces
         )
         if len(message) > max_message_length:
             message = message[0:max_message_length-3] + '...'
 
-        return message_format % (level, project.name, message, link)
+        message = message_format % message_args
+        self.send_payload(event.project, message)
 
     def send_payload(self, project, message):
         server = self.get_option('server', project)
