@@ -1,4 +1,4 @@
-"""
+ """
 sentry_irc.models
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -56,6 +56,7 @@ class IRCMessage(NotificationPlugin):
     title = 'IRC'
     conf_title = 'IRC'
     conf_key = 'irc'
+    slug = 'irc'
     version = sentry_irc.VERSION
     project_conf_form = IRCOptionsForm
 
