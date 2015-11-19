@@ -127,7 +127,7 @@ class IRCMessage(NotificationPlugin):
         ircsock.send("NICK %s\n" % nick)
         while (time.time() - start) < self.timeout:
             ircmsg = ircsock.recv(2048).strip('\n\r')
-            real_nick = CONN_RE.match(ircmsg)
+            real_nick = CONN_RE.search(ircmsg)
             if real_nick is not None:
                 nick = real_nick.group(1)
             pong = PING_RE.findall(ircmsg)
