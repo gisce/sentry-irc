@@ -23,6 +23,7 @@ from sentry.utils.http import absolute_uri
 
 BASE_MAXIMUM_MESSAGE_LENGTH = 400
 PING_RE = re.compile(r'^PING\s*:\s*(.*)$')
+CONN_RE = re.compile(r'\s001\s(\S+)\s:')
 
 
 class IRCOptionsForm(forms.Form):
@@ -126,6 +127,9 @@ class IRCMessage(NotificationPlugin):
         ircsock.send("NICK %s\n" % nick)
         while (time.time() - start) < self.timeout:
             ircmsg = ircsock.recv(2048).strip('\n\r')
+            real_nick = CONN_RE.match(ircmsg)
+            if real_nick is not None:
+                nick = real_nick.group(1)
             pong = PING_RE.findall(ircmsg)
             if pong:
                 ircsock.send("PONG %s\n" % pong)
