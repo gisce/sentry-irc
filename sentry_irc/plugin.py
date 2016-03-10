@@ -73,7 +73,7 @@ class IRCMessage(NotificationPlugin):
 
     def get_group_url(self, group):
         return absolute_uri(reverse('sentry-group', args=[
-            group.team.slug,
+            group.project.organization.slug,
             group.project.slug,
             group.id,
         ]))
