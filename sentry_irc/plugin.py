@@ -23,6 +23,7 @@ from sentry.utils.http import absolute_uri
 
 BASE_MAXIMUM_MESSAGE_LENGTH = 400
 PING_RE = re.compile(r'^PING\s*:\s*(.*)$')
+CONN_RE = re.compile(r'\s001\s(\S+)\s:')
 
 
 class IRCOptionsForm(forms.Form):
@@ -56,6 +57,7 @@ class IRCMessage(NotificationPlugin):
     title = 'IRC'
     conf_title = 'IRC'
     conf_key = 'irc'
+    slug = 'irc'
     version = sentry_irc.VERSION
     project_conf_form = IRCOptionsForm
 
@@ -71,7 +73,7 @@ class IRCMessage(NotificationPlugin):
 
     def get_group_url(self, group):
         return absolute_uri(reverse('sentry-group', args=[
-            group.team.slug,
+            group.project.organization.slug,
             group.project.slug,
             group.id,
         ]))
@@ -125,6 +127,9 @@ class IRCMessage(NotificationPlugin):
         ircsock.send("NICK %s\n" % nick)
         while (time.time() - start) < self.timeout:
             ircmsg = ircsock.recv(2048).strip('\n\r')
+            real_nick = CONN_RE.search(ircmsg)
+            if real_nick is not None:
+                nick = real_nick.group(1)
             pong = PING_RE.findall(ircmsg)
             if pong:
                 ircsock.send("PONG %s\n" % pong)
